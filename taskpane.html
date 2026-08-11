@@ -2,64 +2,49 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Hello Excel</title>
+    <title>Sales Analysis</title>
 
     <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
 </head>
 
 <body>
 
-    <h1>Sales Add-in</h1>
+    <h2>Sales Analysis</h2>
 
-    <button id="readCellButton">
-        Read selected cell
+    <button id="analyseButton">
+        Analyse SalesData
     </button>
 
     <br><br>
 
-    <button id="readTableButton">
-        Read SalesData table
+    <button id="writeButton">
+        Write Results to Excel
     </button>
 
-    <p id="result">
-        Results will appear here.
-    </p>
+    <h3>Results</h3>
+
+    <p id="rows">Rows: -</p>
+    <p id="total">Total quantity: -</p>
+    <p id="average">Average quantity: -</p>
+
+    <p id="message"></p>
 
     <script>
 
+        let analysisResults = null;
+
         Office.onReady(() => {
 
-            document.getElementById("readCellButton").onclick =
-                readSelectedCell;
+            document.getElementById("analyseButton").onclick =
+                analyseSales;
 
-            document.getElementById("readTableButton").onclick =
-                readSalesTable;
+            document.getElementById("writeButton").onclick =
+                writeResults;
 
         });
 
 
-        async function readSelectedCell() {
-
-            await Excel.run(async (context) => {
-
-                const range =
-                    context.workbook.getSelectedRange();
-
-                range.load("values");
-
-                await context.sync();
-
-                const value = range.values[0][0];
-
-                document.getElementById("result").innerText =
-                    "Selected value: " + value;
-
-            });
-
-        }
-
-
-        async function readSalesTable() {
+        async function analyseSales() {
 
             await Excel.run(async (context) => {
 
@@ -80,19 +65,121 @@
                 const headers = headerRange.values[0];
                 const rows = dataRange.values;
 
-                let output = "";
+                const quantityColumn =
+                    headers.indexOf("Quantity");
 
-                output += "Columns: " + headers.join(", ") + "\n\n";
+                if (quantityColumn === -1) {
 
-                output += "Rows found: " + rows.length + "\n\n";
+                    document.getElementById("message").innerText =
+                        'Column "Quantity" was not found.';
+
+                    return;
+                }
+
+                let totalQuantity = 0;
 
                 for (let i = 0; i < rows.length; i++) {
 
-                    output += rows[i].join(" | ") + "\n";
+                    const quantity =
+                        Number(rows[i][quantityColumn]);
+
+                    if (!isNaN(quantity)) {
+                        totalQuantity += quantity;
+                    }
 
                 }
 
-                document.getElementById("result").innerText = output;
+                const numberOfRows = rows.length;
+
+                const averageQuantity =
+                    numberOfRows > 0
+                    ? totalQuantity / numberOfRows
+                    : 0;
+
+
+                analysisResults = {
+                    rows: numberOfRows,
+                    total: totalQuantity,
+                    average: averageQuantity
+                };
+
+
+                document.getElementById("rows").innerText =
+                    "Rows: " + numberOfRows;
+
+                document.getElementById("total").innerText =
+                    "Total quantity: " + totalQuantity;
+
+                document.getElementById("average").innerText =
+                    "Average quantity: " +
+                    averageQuantity.toFixed(2);
+
+                document.getElementById("message").innerText =
+                    "Analysis complete.";
+
+            });
+
+        }
+
+
+        async function writeResults() {
+
+            if (analysisResults === null) {
+
+                document.getElementById("message").innerText =
+                    "Run the analysis first.";
+
+                return;
+            }
+
+            await Excel.run(async (context) => {
+
+                let resultsSheet =
+                    context.workbook.worksheets
+                    .getItemOrNullObject("Results");
+
+                resultsSheet.load("isNullObject");
+
+                await context.sync();
+
+
+                if (resultsSheet.isNullObject) {
+
+                    resultsSheet =
+                        context.workbook.worksheets
+                        .add("Results");
+
+                }
+
+
+                const output =
+                    resultsSheet.getRange("A1:B4");
+
+                output.values = [
+
+                    ["Metric", "Value"],
+
+                    ["Number of rows",
+                        analysisResults.rows],
+
+                    ["Total quantity",
+                        analysisResults.total],
+
+                    ["Average quantity",
+                        analysisResults.average]
+
+                ];
+
+
+                output.format.autofitColumns();
+
+                resultsSheet.activate();
+
+                await context.sync();
+
+
+                document.getElementById("message").innerText =
+                    "Results written to Excel.";
 
             });
 
