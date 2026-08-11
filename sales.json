@@ -1,0 +1,22 @@
+[
+  {
+    "ItemCode": "A001",
+    "InvoiceDate": "2026-08-01",
+    "Quantity": 10
+  },
+  {
+    "ItemCode": "A001",
+    "InvoiceDate": "2026-08-02",
+    "Quantity": 14
+  },
+  {
+    "ItemCode": "A002",
+    "InvoiceDate": "2026-08-03",
+    "Quantity": 7
+  },
+  {
+    "ItemCode": "A002",
+    "InvoiceDate": "2026-08-04",
+    "Quantity": 11
+  }
+]
