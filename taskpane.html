@@ -2,23 +2,23 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Sales Analysis</title>
+    <title>Sales API Test</title>
 
     <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
 </head>
 
 <body>
 
-    <h2>Sales Analysis</h2>
+    <h2>Sales API Test</h2>
 
-    <button id="analyseButton">
-        Analyse SalesData
+    <button id="loadButton">
+        Load Sales Data
     </button>
 
     <br><br>
 
     <button id="writeButton">
-        Write Results to Excel
+        Write Data to Excel
     </button>
 
     <h3>Results</h3>
@@ -26,62 +26,43 @@
     <p id="rows">Rows: -</p>
     <p id="total">Total quantity: -</p>
     <p id="average">Average quantity: -</p>
-
     <p id="message"></p>
 
     <script>
 
-        let analysisResults = null;
+        let salesData = [];
 
         Office.onReady(() => {
 
-            document.getElementById("analyseButton").onclick =
-                analyseSales;
+            document.getElementById("loadButton").onclick =
+                loadSales;
 
             document.getElementById("writeButton").onclick =
-                writeResults;
+                writeSalesToExcel;
 
         });
 
 
-        async function analyseSales() {
+        async function loadSales() {
 
-            await Excel.run(async (context) => {
+            try {
 
-                const table =
-                    context.workbook.tables.getItem("SalesData");
+                const response = await fetch(
+                    "https://YOUR-USERNAME.github.io/hello-excel-addin/sales.json"
+                );
 
-                const headerRange =
-                    table.getHeaderRowRange();
-
-                const dataRange =
-                    table.getDataBodyRange();
-
-                headerRange.load("values");
-                dataRange.load("values");
-
-                await context.sync();
-
-                const headers = headerRange.values[0];
-                const rows = dataRange.values;
-
-                const quantityColumn =
-                    headers.indexOf("Quantity");
-
-                if (quantityColumn === -1) {
-
-                    document.getElementById("message").innerText =
-                        'Column "Quantity" was not found.';
-
-                    return;
+                if (!response.ok) {
+                    throw new Error("Could not load sales data.");
                 }
+
+                salesData = await response.json();
 
                 let totalQuantity = 0;
 
-                for (let i = 0; i < rows.length; i++) {
+                for (let i = 0; i < salesData.length; i++) {
 
                     const quantity =
-                        Number(rows[i][quantityColumn]);
+                        Number(salesData[i].Quantity);
 
                     if (!isNaN(quantity)) {
                         totalQuantity += quantity;
@@ -89,19 +70,13 @@
 
                 }
 
-                const numberOfRows = rows.length;
+                const numberOfRows =
+                    salesData.length;
 
                 const averageQuantity =
                     numberOfRows > 0
                     ? totalQuantity / numberOfRows
                     : 0;
-
-
-                analysisResults = {
-                    rows: numberOfRows,
-                    total: totalQuantity,
-                    average: averageQuantity
-                };
 
 
                 document.getElementById("rows").innerText =
@@ -115,71 +90,89 @@
                     averageQuantity.toFixed(2);
 
                 document.getElementById("message").innerText =
-                    "Analysis complete.";
+                    "Sales data loaded successfully.";
 
-            });
+            }
+
+            catch (error) {
+
+                document.getElementById("message").innerText =
+                    error.message;
+
+            }
 
         }
 
 
-        async function writeResults() {
+        async function writeSalesToExcel() {
 
-            if (analysisResults === null) {
+            if (salesData.length === 0) {
 
                 document.getElementById("message").innerText =
-                    "Run the analysis first.";
+                    "Load the sales data first.";
 
                 return;
             }
 
+
             await Excel.run(async (context) => {
 
-                let resultsSheet =
+                let sheet =
                     context.workbook.worksheets
-                    .getItemOrNullObject("Results");
+                    .getItemOrNullObject("SalesData");
 
-                resultsSheet.load("isNullObject");
+                sheet.load("isNullObject");
 
                 await context.sync();
 
 
-                if (resultsSheet.isNullObject) {
+                if (sheet.isNullObject) {
 
-                    resultsSheet =
+                    sheet =
                         context.workbook.worksheets
-                        .add("Results");
+                        .add("SalesData");
 
                 }
 
 
-                const output =
-                    resultsSheet.getRange("A1:B4");
-
-                output.values = [
-
-                    ["Metric", "Value"],
-
-                    ["Number of rows",
-                        analysisResults.rows],
-
-                    ["Total quantity",
-                        analysisResults.total],
-
-                    ["Average quantity",
-                        analysisResults.average]
-
+                const output = [
+                    ["ItemCode", "InvoiceDate", "Quantity"]
                 ];
 
 
-                output.format.autofitColumns();
+                for (let i = 0; i < salesData.length; i++) {
 
-                resultsSheet.activate();
+                    output.push([
+                        salesData[i].ItemCode,
+                        salesData[i].InvoiceDate,
+                        salesData[i].Quantity
+                    ]);
+
+                }
+
+
+                const rowCount =
+                    output.length;
+
+                const range =
+                    sheet.getRangeByIndexes(
+                        0,
+                        0,
+                        rowCount,
+                        3
+                    );
+
+                range.values = output;
+
+                range.format.autofitColumns();
+
+                sheet.activate();
 
                 await context.sync();
 
 
                 document.getElementById("message").innerText =
-                    "Results written to Excel.";
+                    "Sales data written to Excel.";
 
             });
 
