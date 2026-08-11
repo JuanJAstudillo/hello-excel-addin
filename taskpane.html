@@ -9,52 +9,33 @@
 
 <body>
 
-    <h1>Hello World!</h1>
-    <p>My first Excel Add-in</p>
+    <h1>Sales Add-in</h1>
 
-    <button id="helloButton">
-        Write Hello World to Excel
+    <button id="readCellButton">
+        Read selected cell
     </button>
 
     <br><br>
 
-    <button id="readButton">
-        Read selected cell
+    <button id="readTableButton">
+        Read SalesData table
     </button>
 
     <p id="result">
-        Selected value will appear here.
+        Results will appear here.
     </p>
 
     <script>
 
         Office.onReady(() => {
 
-            document.getElementById("helloButton").onclick =
-                writeHello;
-
-            document.getElementById("readButton").onclick =
+            document.getElementById("readCellButton").onclick =
                 readSelectedCell;
 
+            document.getElementById("readTableButton").onclick =
+                readSalesTable;
+
         });
-
-
-        async function writeHello() {
-
-            await Excel.run(async (context) => {
-
-                const sheet =
-                    context.workbook.worksheets.getActiveWorksheet();
-
-                const cell = sheet.getRange("A1");
-
-                cell.values = [["Hello World!"]];
-
-                await context.sync();
-
-            });
-
-        }
 
 
         async function readSelectedCell() {
@@ -72,6 +53,46 @@
 
                 document.getElementById("result").innerText =
                     "Selected value: " + value;
+
+            });
+
+        }
+
+
+        async function readSalesTable() {
+
+            await Excel.run(async (context) => {
+
+                const table =
+                    context.workbook.tables.getItem("SalesData");
+
+                const headerRange =
+                    table.getHeaderRowRange();
+
+                const dataRange =
+                    table.getDataBodyRange();
+
+                headerRange.load("values");
+                dataRange.load("values");
+
+                await context.sync();
+
+                const headers = headerRange.values[0];
+                const rows = dataRange.values;
+
+                let output = "";
+
+                output += "Columns: " + headers.join(", ") + "\n\n";
+
+                output += "Rows found: " + rows.length + "\n\n";
+
+                for (let i = 0; i < rows.length; i++) {
+
+                    output += rows[i].join(" | ") + "\n";
+
+                }
+
+                document.getElementById("result").innerText = output;
 
             });
 
