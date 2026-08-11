@@ -51,6 +51,10 @@
                     "https://sales-api-test-dsdl.onrender.com/sales?months=12"
                 );
 
+                if (!response.ok) {
+                    throw new Error("API returned error: " + response.status);
+                }
+
                 const result = await response.json();
                 
                 salesData = result.sales;
