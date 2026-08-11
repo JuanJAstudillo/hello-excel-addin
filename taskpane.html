@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Hello Excel</title>
+
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+</head>
+
+<body>
+
+    <h1>Hello World!</h1>
+    <p>My first Excel Add-in</p>
+
+    <button id="helloButton">
+        Write Hello World to Excel
+    </button>
+
+    <script>
+
+        Office.onReady(() => {
+
+            document.getElementById("helloButton").onclick =
+                async function () {
+
+                    await Excel.run(async (context) => {
+
+                        const sheet =
+                            context.workbook.worksheets
+                            .getActiveWorksheet();
+
+                        const cell =
+                            sheet.getRange("A1");
+
+                        cell.values =
+                            [["Hello World!"]];
+
+                        await context.sync();
+
+                    });
+
+                };
+
+        });
+
+    </script>
+
+</body>
+</html>
