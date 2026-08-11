@@ -51,11 +51,9 @@
                     "https://sales-api-test-dsdl.onrender.com/sales?months=12"
                 );
 
-                if (!response.ok) {
-                    throw new Error("Could not load sales data.");
-                }
-
-                salesData = await response.json();
+                const result = await response.json();
+                
+                salesData = result.sales;
 
                 let totalQuantity = 0;
 
