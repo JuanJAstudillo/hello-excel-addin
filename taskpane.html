@@ -16,32 +16,66 @@
         Write Hello World to Excel
     </button>
 
+    <br><br>
+
+    <button id="readButton">
+        Read selected cell
+    </button>
+
+    <p id="result">
+        Selected value will appear here.
+    </p>
+
     <script>
 
         Office.onReady(() => {
 
             document.getElementById("helloButton").onclick =
-                async function () {
+                writeHello;
 
-                    await Excel.run(async (context) => {
-
-                        const sheet =
-                            context.workbook.worksheets
-                            .getActiveWorksheet();
-
-                        const cell =
-                            sheet.getRange("A1");
-
-                        cell.values =
-                            [["Hello World!"]];
-
-                        await context.sync();
-
-                    });
-
-                };
+            document.getElementById("readButton").onclick =
+                readSelectedCell;
 
         });
+
+
+        async function writeHello() {
+
+            await Excel.run(async (context) => {
+
+                const sheet =
+                    context.workbook.worksheets.getActiveWorksheet();
+
+                const cell = sheet.getRange("A1");
+
+                cell.values = [["Hello World!"]];
+
+                await context.sync();
+
+            });
+
+        }
+
+
+        async function readSelectedCell() {
+
+            await Excel.run(async (context) => {
+
+                const range =
+                    context.workbook.getSelectedRange();
+
+                range.load("values");
+
+                await context.sync();
+
+                const value = range.values[0][0];
+
+                document.getElementById("result").innerText =
+                    "Selected value: " + value;
+
+            });
+
+        }
 
     </script>
 
